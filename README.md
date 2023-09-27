@@ -1,3 +1,21 @@
+## Using custom DM build in Label Studio
+
+ You can install DataManager into Label Studio by replacing bundle files.
+
+First, build the DataManager itself to create the build with minified version of css and js files of DataManager:
+
+```
+npm ci --legacy-peer-deps && npm run build:module
+```
+
+Next replace the bundle in Label Studio with a new one:
+
+```
+cp -r ./build/**/* [your-x--label-studio-path]/x-label-studio/label_studio/frontend/dist/dm/
+```
+
+Now you can start Label Studio if it's not running, or refresh the page in the browser to reflect the new changes of data manager to label-studio.
+
 ## Data Manager 2.0 &middot; ![Build and Test](https://github.com/heartexlabs/dm2/workflows/Build%20and%20Test/badge.svg) &middot; [![npm version](https://badge.fury.io/js/%40heartexlabs%2Fdatamanager.svg)](https://badge.fury.io/js/%40heartexlabs%2Fdatamanager)
 
 [Website](https://labelstud.io/) • [Docs](https://labelstud.io/guide) • [Twitter](https://twitter.com/heartexlabs) • [Join Slack Community](https://slack.labelstud.io)

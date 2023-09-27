@@ -563,8 +563,8 @@ export class LSFWrapper {
 
   /** @private */
   onUpdateAnnotation = async (ls, annotation, extraData) => {
-    const { task } = this;
-    const serializedAnnotation = this.prepareData(annotation);
+    const { task, datamanager } = this;
+    const serializedAnnotation = this.prepareData(annotation, {}, task, datamanager);
     const exitStream = this.shouldExitStream();
 
     Object.assign(serializedAnnotation, extraData);
@@ -796,9 +796,9 @@ export class LSFWrapper {
     this.loadTask(prevTaskId, prevAnnotationId, true);
   }
   async submitCurrentAnnotation(eventName, submit, includeId = false, loadNext = true, exitStream) {
-    const { taskID, currentAnnotation, task } = this;
+    const { taskID, currentAnnotation, task, datamanager } = this;
     const unique_id = this.task.unique_lock_id;
-    const serializedAnnotation = this.prepareData(currentAnnotation, { includeId }, task);
+    const serializedAnnotation = this.prepareData(currentAnnotation, { includeId }, task, datamanager);
 
     if (unique_id) {
       serializedAnnotation.unique_id = unique_id;
@@ -840,7 +840,19 @@ export class LSFWrapper {
   }
 
   /** @private */
-  prepareData(annotation, { includeId, draft } = {}, task) {
+  prepareData(annotation, { includeId, draft } = {}, task, datamanager) {
+
+    const labelConfig = datamanager.project.label_config;
+    const mirroringBboxRegex = /mirroringBbox="([^"]+)"/;
+    const getMatch = mirroringBboxRegex.exec(labelConfig);
+    let mirroringBboxValue;
+
+    if (getMatch && getMatch[1]) {
+      mirroringBboxValue = getMatch[1];
+    } else {
+      mirroringBboxValue = false;
+    }
+
     const userGenerate =
       !annotation.userGenerate || annotation.sentUserGenerate;
     
@@ -857,17 +869,24 @@ export class LSFWrapper {
       parent_annotation: annotation.parent_annotation,
     };
 
-    const dynamicResult = [];
-    const tempResult = Object.assign({}, result.result[0]);
+    if(mirroringBboxValue === "true"){
+      const firstImageResults = result.result.filter((item) => item.to_name === Object.keys(task.data)[0]);
+      const remainingImageResults = [];
 
-    dynamicResult.push(result.result[0]);
-    for(let i = 1; i < Object.keys(task.data).length; i++){
-      tempResult.id = `ABv-94alrf0${i+1}`;
-      tempResult.from_name = `label${i+1}`;
-      tempResult.to_name = Object.keys(task.data)[i];
-      dynamicResult.push(tempResult);
+      for(let i = 1; i < Object.keys(task.data).length; i++){
+        firstImageResults.map((item, index) => (
+          remainingImageResults.push({
+            ...item,
+            id: `${task.id}${i+1}${index}`,
+            from_name: `${result.result[0].from_name.split("1").join("")}${i+1}`,
+            to_name: `${Object.keys(task.data)[0].split("1").join("")}${i+1}`,
+          })
+        ));
+      }
+      const finalResult = result.result.concat(remainingImageResults);
+
+      result.result = finalResult;
     }
-    result.result = dynamicResult;
 
     if (includeId && userGenerate) {
       result.id = parseInt(annotation.pk);
