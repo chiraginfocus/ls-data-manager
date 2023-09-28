@@ -843,9 +843,9 @@ export class LSFWrapper {
   prepareData(annotation, { includeId, draft } = {}, task, datamanager) {
 
     const labelConfigObject = datamanager.project.parsed_label_config;
-    const labelConfig = datamanager.project.label_config;
+    const projectTemplate = datamanager.project.label_config;
     const mirroringBboxRegex = /mirroringBbox="([^"]+)"/;
-    const getMatch = mirroringBboxRegex.exec(labelConfig);
+    const getMatch = mirroringBboxRegex.exec(projectTemplate);
     let mirroringBboxValue;
 
     if (getMatch && getMatch[1]) {
