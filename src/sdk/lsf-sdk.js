@@ -842,6 +842,7 @@ export class LSFWrapper {
   /** @private */
   prepareData(annotation, { includeId, draft } = {}, task, datamanager) {
 
+    const labelConfigObject = datamanager.project.parsed_label_config;
     const labelConfig = datamanager.project.label_config;
     const mirroringBboxRegex = /mirroringBbox="([^"]+)"/;
     const getMatch = mirroringBboxRegex.exec(labelConfig);
@@ -871,21 +872,21 @@ export class LSFWrapper {
 
     if(mirroringBboxValue === "true"){
       const firstImageResults = result.result.filter((item) => item.to_name === Object.keys(task.data)[0]);
-      const remainingImageResults = [];
+      const allImageResult = [];
 
-      for(let i = 1; i < Object.keys(task.data).length; i++){
-        firstImageResults.map((item, index) => (
-          remainingImageResults.push({
+      for(const key in labelConfigObject){
+        firstImageResults.map((item, index) => {
+          const randomString = String.fromCharCode(97 + Math.floor(Math.random() * 26)) + Math.floor(Math.random() * 10);
+
+          allImageResult.push({
             ...item,
-            id: `${task.id}${i+1}${index}`,
-            from_name: `${result.result[0].from_name.split("1").join("")}${i+1}`,
-            to_name: `${Object.keys(task.data)[0].split("1").join("")}${i+1}`,
-          })
-        ));
+            id: `${task.id}${index}${randomString}`,
+            from_name: key,
+            to_name: labelConfigObject[key].to_name[0],
+          });
+        });
       }
-      const finalResult = result.result.concat(remainingImageResults);
-
-      result.result = finalResult;
+      result.result = allImageResult;
     }
 
     if (includeId && userGenerate) {
